@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import os
-from iaas.aws import aws
+from iaas.aws.aws import aws
 
 class ES:
     def __init__(self, name, iaas):
@@ -20,6 +20,12 @@ class ES:
         return self._data['kibana_itype']
     def set_kibana_itype(self, itype):
         self._data['kibana_itype'] = itype
+        return self
+
+    def get_logstash_itype(self):
+        return self._data['logstash_itype']
+    def set_logstash_itype(self, itype):
+        self._data['logstash_itype'] = itype
         return self
 
     def get_vpc_netaddr(self):

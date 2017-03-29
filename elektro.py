@@ -35,6 +35,11 @@ parser.add_argument("-e", "--elastic-instance-type",
                   type=str,
                   dest="elastic_itype",
                   help="Instance type for Elasticesearch server")
+parser.add_argument("-l", "--logstash-instance-type",
+                  default="t1.micro",
+                  type=str,
+                  dest="logstash_itype",
+                  help="Instance type for Logstash server")
 parser.add_argument("-k", "--kibana-instance-type",
                   default="t1.micro",
                   type=str,
@@ -62,7 +67,7 @@ if command not in valid_commands:
     help()
     sys.exit(1)
 
-elektro_home = "{}/.elektro".format(os.path.expanduser("~"))
+elektro_home = "{}/.elektro/{}".format(os.path.expanduser("~"), args.cluster_name)
 if not os.path.exists(elektro_home):
     os.mkdir(elektro_home)
 
@@ -70,6 +75,7 @@ ecluster = ES(args.cluster_name, args.iaas)
 ecluster.set_vpc_netaddr(args.vpc_network) \
         .set_command(command) \
         .set_zone(args.zone_name) \
+        .set_logstash_itype(args.logstash_itype) \
         .set_elastic_itype(args.elastic_itype) \
         .set_kibana_itype(args.kibana_itype)
 
