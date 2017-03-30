@@ -18,7 +18,13 @@ class aws(iaas):
 
     def apply(self, data):
         elektro_home = "{}/.elektro/{}".format(os.path.expanduser("~"), data['name'])
-        tf = open("{}/{}.tf".format(elektro_home, data['name']),'w')
+        vf = open('{}/variables.tf'.format(elektro_home),'w')
+        tf = open('{}/{}.tf'.format(elektro_home, data['name']),'w')
         tf.write(self.render('aws.tf.j2', data))
         tf.close()
+        vf.write('variable "aws_access_key" {} default = "{}" {}'.format('{',os.getenv('AWS_ACCESS_KEY_ID'),'}'))
+        vf.write("\n")
+        vf.write('variable "aws_secret_key" {} default = "{}" {}'.format('{',os.getenv('AWS_SECRET_ACCESS_KEY'),'}'))
+        vf.write("\n")
+        vf.close()
         call(["terraform", "apply"], cwd=elektro_home)

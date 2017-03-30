@@ -1,94 +1,75 @@
 variable "cluster_id" { default = "elektro_{{ name }}_{{ zone }}" }
 variable "state" { default = "{{ state }}" }
-variable "vpc_id" { default = "vpc_${var.cluster_id}" }
+variable "vpc_id" { default = "elk_vpc_{{ name }}" }
+variable "vpc_cidr" { default = "{{ vpc_cidr }}" }
 variable "avail_zone" { default = "{{ zone }}" }
 variable "logstash_itype" { default = "{{ logstash_itype }}" }
 variable "kibana_itype" { default = "{{ kibana_itype }}" }
 variable "elastic_itype" { default = "{{ elastic_itype }}" }
 variable "image_id" { default = "ami-7de77b11" }
 
-data "aws_vpc" "selected" {
-  id = "${var.vpc_id}"
-  state = "${var.state}"
+provider "aws" {
+  region     = "${var.avail_zone}"
+  access_key = "${var.aws_access_key}"
+  secret_key = "${var.aws_secret_key}"
+}
+
+resource "aws_vpc" "elk_vpc_{{ name }}" {
+    cidr_block = "${var.vpc_cidr}"
+    enable_dns_hostnames = true
+    tags {
+        Name = "elektro-aws-vpc"
+    }
+}
+
+resource "aws_internet_gateway" "elektro_gw_{{ name }}" {
+    vpc_id = "${aws_vpc.elk_vpc_{{ name }}.id}"
 }
 
 resource "aws_subnet" "sub_{{ name }}" {
-  vpc_id            = "${data.aws_vpc.selected.id}"
-  availability_zone = "${var.avail_zone}"
-  cidr_block        = "${cidrsubnet(data.aws_vpc.selected.cidr_block, 4, 1)}"
+  vpc_id            = "${aws_vpc.elk_vpc_{{ name }}.id}"
+  availability_zone = "${var.avail_zone}a"
+  cidr_block        = "${cidrsubnet(aws_vpc.elk_vpc_{{ name }}.cidr_block, 4, 1)}"
 }
 
-data "aws_instance" "logstash_{{ name }}" {
-  availability_zone  = "${var.avail_zone}"
-  instance_type = "${var.logstash_itype}"
-  subnet_id = "${data.aws_subnet.sub_{{ name }}.id}"
-  inline = [
-    "curl https://raw.githubusercontent.com/manoelhc/elastic-repo-install/master/yum-install.sh | bash",
-    "yum install logstash -y"
-  ]
-  filter {
-    name   = "image-id"
-    values = ["${var.image_id}"]
-  }
-  filter {
-    name   = "tag:ElektroRole"
-    values = ["logstash"]
-  }
-  filter {
-    name   = "tag:Name"
-    values = ["i-logstash-${var.cluster_id}"]
+resource "aws_instance" "logstash_{{ name }}" {
+  depends_on = ["aws_subnet.sub_{{ name }}"]
+  availability_zone  = "${var.avail_zone}a"
+  instance_type = "${var.elastic_itype}"
+  ami = "${var.image_id}"
+  subnet_id = "${aws_subnet.sub_{{ name }}.id}"
+  provisioner "remote-exec" {
+    inline = [
+      "curl https://raw.githubusercontent.com/manoelhc/elastic-repo-install/master/yum-install.sh | bash",
+      "yum install logstash -y"
+    ]
   }
 }
 
-data "aws_instance" "kibana_{{ name }}" {
-  availability_zone  = "${var.avail_zone}"
-  instance_type = "${var.kibana_itype}"
-  subnet_id = "${data.aws_subnet.sub_{{ name }}.id}"
-
-  # Simle Kibana installation
+resource "aws_instance" "kibana_{{ name }}" {
+  depends_on = ["aws_subnet.sub_{{ name }}"]
+  subnet_id = "${aws_subnet.sub_{{ name }}.id}"
+  availability_zone  = "${var.avail_zone}a"
+  instance_type = "${var.elastic_itype}"
+  ami = "${var.image_id}"
   provisioner "remote-exec" {
     inline = [
       "curl https://raw.githubusercontent.com/manoelhc/elastic-repo-install/master/yum-install.sh | bash",
       "yum install kibana -y"
     ]
   }
-
-  filter {
-    name   = "image-id"
-    values = ["${var.image_id}"]
-  }
-  filter {
-    name   = "tag:ElektroRole"
-    values = ["kibana"]
-  }
-  filter {
-    name   = "tag:Name"
-    values = ["i-kibana-${var.cluster_id}"]
-  }
 }
 
-data "aws_instance" "elastic_{{ name }}" {
-  availability_zone  = "${var.avail_zone}"
+resource "aws_instance" "elastic_{{ name }}" {
+  depends_on = ["aws_subnet.sub_{{ name }}"]
+  subnet_id = "${aws_subnet.sub_{{ name }}.id}"
+  availability_zone  = "${var.avail_zone}a"
   instance_type = "${var.elastic_itype}"
-  subnet_id = "${data.aws_subnet.sub_{{ name }}.id}"
-
-  # Simple elasticsearch installation
+  ami = "${var.image_id}"
   provisioner "remote-exec" {
     inline = [
       "curl https://raw.githubusercontent.com/manoelhc/elastic-repo-install/master/yum-install.sh | bash",
       "yum install elasticsearch -y"
     ]
-  }
-  filter {
-    name   = "image-id"
-    values = ["${var.image_id}"]
-  }
-  filter {
-    name   = "tag:ElektroRole"
-    values = ["elastic"]
-  }
-  filter {
-    name   = "tag:Name"
-    values = ["i-elastic-${var.cluster_id}"]
   }
 }

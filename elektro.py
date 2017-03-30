@@ -26,22 +26,22 @@ parser.add_argument("-z", "--zone",
                   type=str,
                   help="Availability Zone")
 
-parser.add_argument("-a", "--vpc-net",
-                  dest="vpc_network",
+parser.add_argument("-a", "--vpc-cidr",
+                  dest="vpc_cidr",
                   type=str,
-                  help="VPC Network Address")
+                  help="VPC's CIDR")
 parser.add_argument("-e", "--elastic-instance-type",
-                  default="t1.micro",
+                  default="t2.micro",
                   type=str,
                   dest="elastic_itype",
                   help="Instance type for Elasticesearch server")
 parser.add_argument("-l", "--logstash-instance-type",
-                  default="t1.micro",
+                  default="t2.micro",
                   type=str,
                   dest="logstash_itype",
                   help="Instance type for Logstash server")
 parser.add_argument("-k", "--kibana-instance-type",
-                  default="t1.micro",
+                  default="t2.micro",
                   type=str,
                   dest="kibana_itype",
                   help="Instance type for Kibana server")
@@ -72,7 +72,7 @@ if not os.path.exists(elektro_home):
     os.mkdir(elektro_home)
 
 ecluster = ES(args.cluster_name, args.iaas)
-ecluster.set_vpc_netaddr(args.vpc_network) \
+ecluster.set_vpc_netaddr(args.vpc_cidr) \
         .set_command(command) \
         .set_zone(args.zone_name) \
         .set_logstash_itype(args.logstash_itype) \

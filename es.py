@@ -29,9 +29,9 @@ class ES:
         return self
 
     def get_vpc_netaddr(self):
-        return self._data['netaddr']
+        return self._data['vpc_cidr']
     def set_vpc_netaddr(self, netaddr):
-        self._data['netaddr'] = netaddr
+        self._data['vpc_cidr'] = netaddr
         return self
 
     def get_iaas(self):
